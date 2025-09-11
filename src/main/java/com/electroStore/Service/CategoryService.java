@@ -20,6 +20,12 @@ public interface CategoryService {
 	
 	public CategoryDto getSingleCategory(String id);
 	
+	public CategoryDto uploadImage(String id,MultipartFile file) throws IOException;
+	
+	public CategoryDto updateImage(String id,MultipartFile file) throws IOException, Exception;
+	
+	public CategoryDto deleteImage(String id) throws IOException, Exception;
+	
 	
 
 }

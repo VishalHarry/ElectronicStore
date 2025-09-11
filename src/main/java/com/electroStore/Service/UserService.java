@@ -15,7 +15,7 @@ public interface UserService {
 	UserDto updateUser(UserDto userDto,String id) throws Exception;
 	
 	
-	void deleteUser(String id);
+	void deleteUser(String id) throws Exception;
 	
 	PagableResponse<UserDto> getallUsers( int pageNumber, int pageSize,String sortBy,String sortOrder);
 	

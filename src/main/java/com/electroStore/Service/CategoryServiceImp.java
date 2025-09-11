@@ -54,7 +54,11 @@ public class CategoryServiceImp  implements CategoryService{
 	@Override
 	public void deleteCategory(String id) throws Exception {
 		Category savedCategory=repo.findById(id).orElseThrow(()-> new ResourceNotFoundExceptions("Category not found with id: " + id));
-		
+		 // 🔴 Agar image hai toh pehle cloudinary se delete karo
+	    if (savedCategory.getCoverImage() != null) {
+	        String publicId = imageUploadService.extractPublicId(savedCategory.getCoverImage());
+	        imageUploadService.deleteFile(publicId);
+	    }
 		repo.delete(savedCategory);
 	}
 
@@ -74,5 +78,58 @@ public class CategoryServiceImp  implements CategoryService{
 		Category savedCategory=repo.findById(id).orElseThrow(()-> new ResourceNotFoundExceptions("Category not found with id: " + id));
 		return modelMapper.map(savedCategory, CategoryDto.class);
 	}
+
+	@Override
+	public CategoryDto uploadImage(String id, MultipartFile file) throws IOException {
+	    Category savedCategory = repo.findById(id)
+	            .orElseThrow(() -> new ResourceNotFoundExceptions("Category not found with id: " + id));
+
+	    // Upload image
+	    String image = imageUploadService.imageUploadService(file);
+	    savedCategory.setCoverImage(image);
+
+	    Category updatedCategory = repo.save(savedCategory);
+	    return modelMapper.map(updatedCategory, CategoryDto.class);
+	}
+
+	@Override
+	public CategoryDto updateImage(String id, MultipartFile file) throws Exception {
+	    Category savedCategory = repo.findById(id)
+	            .orElseThrow(() -> new ResourceNotFoundExceptions("Category not found with id: " + id));
+
+	    // 🔴 If already has image, delete the old one
+	    if (savedCategory.getCoverImage() != null) {
+	        String publicId = imageUploadService.extractPublicId(savedCategory.getCoverImage());
+	        imageUploadService.deleteFile(publicId);
+	    }
+
+	    // Upload new image
+	    String image = imageUploadService.imageUploadService(file);
+	    savedCategory.setCoverImage(image);
+
+	    Category updatedCategory = repo.save(savedCategory);
+	    return modelMapper.map(updatedCategory, CategoryDto.class);
+	}
+
+	@Override
+	public CategoryDto deleteImage(String id) throws Exception {
+	    Category savedCategory = repo.findById(id)
+	            .orElseThrow(() -> new ResourceNotFoundExceptions("Category not found with id: " + id));
+
+	    if (savedCategory.getCoverImage() == null) {
+	        throw new RuntimeException("Category does not have an image to delete.");
+	    }
+
+	    // Delete image from cloud
+	    String publicId = imageUploadService.extractPublicId(savedCategory.getCoverImage());
+	    imageUploadService.deleteFile(publicId);
+
+	    // Remove from DB
+	    savedCategory.setCoverImage("https://dummyimage.com/600x400/cccccc/000000&text=No+Image");
+	    Category updatedCategory = repo.save(savedCategory);
+
+	    return modelMapper.map(updatedCategory, CategoryDto.class);
+	}
+
 
 }

@@ -97,5 +97,40 @@ public class CategoryController {
 	}
 	
 	
+	 // ✅ Upload Category Image
+    @PostMapping("/upload/{id}")
+    public ResponseEntity<CategoryDto> uploadImage(
+            @PathVariable String id,
+            @RequestPart("file") MultipartFile file) throws IOException {
+
+        CategoryDto resp = categoryService.uploadImage(id, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+    }
+
+    // ✅ Update Category Image
+    @PutMapping("/update/{id}")
+    public ResponseEntity<CategoryDto> updateImage(
+            @PathVariable String id,
+            @RequestPart("file") MultipartFile file) throws Exception {
+
+        CategoryDto resp = categoryService.updateImage(id, file);
+        return ResponseEntity.ok(resp);
+    }
+
+    // ✅ Delete Category Image
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Messageresponce> deleteImage(@PathVariable String id) throws Exception {
+        CategoryDto updatedCategory = categoryService.deleteImage(id);
+
+        Messageresponce resp=new Messageresponce();
+        resp.setMessage("Image deleted successfully!!");
+        resp.setStatus(HttpStatus.OK);
+        resp.setSuccess(true);
+        
+
+        return ResponseEntity.ok(resp);
+    }
+	
+	
 
 }

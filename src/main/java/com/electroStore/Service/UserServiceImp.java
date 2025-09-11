@@ -58,8 +58,12 @@ public class UserServiceImp  implements UserService{
 	}
 
 	@Override
-	public void deleteUser(String id) {
+	public void deleteUser(String id) throws Exception {
 		User savedUser=userRepo.findById(id).orElseThrow(()->new ResourceNotFoundExceptions("User not found with this id !!"));
+		 if (savedUser.getImageUrl() != null) {
+		        String publicId = imageUploadService.extractPublicId(savedUser.getImageUrl());
+		        imageUploadService.deleteFile(publicId);
+		 }
 		userRepo.delete(savedUser);
 		
 	}
