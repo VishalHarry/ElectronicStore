@@ -7,10 +7,13 @@ import com.electroStore.Service.ProductService;
 
 import jakarta.validation.Valid;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/product")
@@ -35,7 +38,7 @@ public class ProductController {
 
     
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Messageresponce> deleteProduct(@PathVariable String id) {
+    public ResponseEntity<Messageresponce> deleteProduct(@PathVariable String id) throws Exception {
         productService.deleteproduct(id);
 
         Messageresponce resp = new Messageresponce();
@@ -76,5 +79,51 @@ public class ProductController {
 
         PagableResponse<ProductDto> resp = productService.searchProduct(keyword, pageNumber, pageSize, sortBy, sortOrder);
         return new ResponseEntity<>(resp, HttpStatus.OK);
+    }
+    
+    
+    // ✅ Upload Product Image
+    @PostMapping("/upload/{id}")
+    public ResponseEntity<ProductDto> uploadImage(
+            @PathVariable String id,
+            @RequestPart("file") MultipartFile file) throws IOException {
+
+        ProductDto resp = productService.uploadImage(id, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+    }
+
+    // ✅ Update Product Image
+    @PutMapping("/update-image/{id}")
+    public ResponseEntity<ProductDto> updateImage(
+            @PathVariable String id,
+            @RequestPart("file") MultipartFile file) throws Exception {
+
+        ProductDto resp = productService.updateImage(id, file);
+        return ResponseEntity.ok(resp);
+    }
+
+    // ✅ Delete Product Image
+    @DeleteMapping("/delete-image/{id}")
+    public ResponseEntity<Messageresponce> deleteImage(@PathVariable String id) throws Exception {
+         productService.deleteImage(id);
+
+        Messageresponce resp = new Messageresponce();
+        resp.setMessage("Image deleted successfully!!");
+        resp.setStatus(HttpStatus.OK);
+        resp.setSuccess(true);
+
+        return ResponseEntity.ok(resp);
+    }
+    
+    @PostMapping("/create/category/{id}")
+    public ResponseEntity<ProductDto> createProductwithCategory(@Valid @RequestBody ProductDto dto,@PathVariable String id) {
+        ProductDto resp = productService.createProductWithCategory(dto,id);
+        return new ResponseEntity<>(resp, HttpStatus.CREATED);
+    }
+    
+    @PutMapping("/update/category/{id}/product/{productId}")
+    public ResponseEntity<ProductDto> udateProductCAtegory(@PathVariable String id,@PathVariable String productId) {
+        ProductDto resp = productService.updateCategoryOFProductDto(productId, id);
+        return new ResponseEntity<>(resp, HttpStatus.CREATED);
     }
 }

@@ -2,9 +2,12 @@ package com.electroStore.DTOs;
 
 import java.util.Date;
 
+import com.electroStore.Entities.Category;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -44,4 +47,11 @@ public class ProductDto {
 
     @NotNull(message = "Stock status must be specified (true/false)")
     private Boolean stock;
+    
+    
+    private String image;
+    
+    private CategoryDto category;
+
+    
 }
