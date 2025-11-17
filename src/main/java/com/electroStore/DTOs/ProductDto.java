@@ -51,7 +51,7 @@ public class ProductDto {
     
     private String image;
     
-    private CategoryDto category;
+    private String  categoryId;
 
     
 }

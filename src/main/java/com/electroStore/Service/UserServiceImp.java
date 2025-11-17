@@ -1,25 +1,36 @@
 package com.electroStore.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.hibernate.query.Page;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.electroStore.DTOs.PagableResponse;
+import com.electroStore.DTOs.RoleDto;
 import com.electroStore.DTOs.UserDto;
+import com.electroStore.Entities.Role;
 import com.electroStore.Entities.User;
 import com.electroStore.Exceptions.ResourceNotFoundExceptions;
 import com.electroStore.Helper.HelperFun;
+import com.electroStore.Repositories.RoleRepo;
 import com.electroStore.Repositories.UserRepo;
+
+import jakarta.transaction.Transactional;
 @Service
+@Transactional
 public class UserServiceImp  implements UserService{
 	
 	@Autowired
@@ -29,33 +40,119 @@ public class UserServiceImp  implements UserService{
 	
 	@Autowired
 	private ImageUploadService imageUploadService;
+	
+	
+	@Autowired
+	private RoleRepo roleRepo;
 
 	@Override
+	@Transactional
 	public UserDto createUser(UserDto userDto) {
-		String userId=UUID.randomUUID().toString();
-		userDto.setUserId(userId);
-		User user=modelMapper.map(userDto, User.class);
-		
-		User savedUser=userRepo.save(user);
-		
-		
-		return modelMapper.map(savedUser, UserDto.class);
+	    // 1️⃣ Generate unique userId
+	    String userId = UUID.randomUUID().toString();
+	    userDto.setUserId(userId);
+
+	    // 2️⃣ Map DTO → Entity
+	    User user = modelMapper.map(userDto, User.class);
+
+	    // 3️⃣ Encode password if encoder configured
+	    user.setPassword(user.getPassword());
+
+	    // 4️⃣ Handle roles
+	    Set<Role> roles = new HashSet<>();
+
+	    if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
+	        // ✅ Case 1: Roles provided in JSON like ["ADMIN", "USER"]
+	        for (String roleName : userDto.getRoles()) {
+	            Role role = roleRepo.findByRoleName(roleName)
+	                    .orElseGet(() -> {
+	                        // Auto-create role if not found
+	                        Role newRole = new Role();
+	                        newRole.setRoleName(roleName);
+	                        return roleRepo.save(newRole);
+	                    });
+	            roles.add(role);
+	        }
+	    } else {
+	        // ✅ Case 2: No roles provided → assign default "USER" role
+	        Role defaultRole = roleRepo.findByRoleName("USER")
+	                .orElseGet(() -> {
+	                    Role newRole = new Role();
+	                    newRole.setRoleName("USER");
+	                    return roleRepo.save(newRole);
+	                });
+	        roles.add(defaultRole);
+	    }
+
+	    user.setRoles(roles);
+
+	    // 5️⃣ Save user
+	    User savedUser = userRepo.save(user);
+
+	    // 6️⃣ Convert back to DTO
+	    UserDto savedUserDto = modelMapper.map(savedUser, UserDto.class);
+
+	    // 7️⃣ Convert role entities → String names for response
+	    Set<String> roleNames = savedUser.getRoles()
+	            .stream()
+	            .map(Role::getRoleName)
+	            .collect(Collectors.toSet());
+
+	    savedUserDto.setRoles(roleNames);
+
+	    return savedUserDto;
 	}
+
 
 	@Override
+	@Transactional
 	public UserDto updateUser(UserDto userDto, String id) throws Exception {
-		User savedUser=userRepo.findById(id).orElseThrow(()->new ResourceNotFoundExceptions("User not found with this id !!"));
-		User user=modelMapper.map(userDto, User.class);
-		savedUser.setName(user.getName());
-		savedUser.setPassword(user.getPassword());
-		savedUser.setAbout(user.getAbout());
-		savedUser.setGender(user.getGender());
-		savedUser.setImageUrl(user.getImageUrl());
-		
-		    userRepo.save(savedUser);
+	    // 1️⃣ Find existing user
+	    User savedUser = userRepo.findById(id)
+	            .orElseThrow(() -> new ResourceNotFoundExceptions("User not found with id: " + id));
 
-		return modelMapper.map(savedUser, UserDto.class);
+	    // 2️⃣ Update simple fields (only if not null)
+	    if (userDto.getName() != null) savedUser.setName(userDto.getName());
+	    if (userDto.getPassword() != null && !userDto.getPassword().isBlank())
+	        savedUser.setPassword(userDto.getPassword());
+	    if (userDto.getAbout() != null) savedUser.setAbout(userDto.getAbout());
+	    if (userDto.getGender() != null) savedUser.setGender(userDto.getGender());
+	    if (userDto.getImageUrl() != null) savedUser.setImageUrl(userDto.getImageUrl());
+	    if (userDto.getEmail() != null) savedUser.setEmail(userDto.getEmail());
+
+	    // 3️⃣ Handle role updates (if provided)
+	    if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
+	        Set<Role> updatedRoles = new HashSet<>();
+
+	        for (String roleName : userDto.getRoles()) {
+	            Role role = roleRepo.findByRoleName(roleName)
+	                    .orElseGet(() -> {
+	                        // Auto-create new role if not found
+	                        Role newRole = new Role();
+	                        newRole.setRoleName(roleName);
+	                        return roleRepo.save(newRole);
+	                    });
+	            updatedRoles.add(role);
+	        }
+
+	        savedUser.setRoles(updatedRoles);
+	    }
+
+	    // 4️⃣ Save updated user
+	    User updatedUser = userRepo.save(savedUser);
+
+	    // 5️⃣ Convert to DTO
+	    UserDto updatedUserDto = modelMapper.map(updatedUser, UserDto.class);
+
+	    // 6️⃣ Convert roles (Set<Role> → Set<String>)
+	    Set<String> roleNames = updatedUser.getRoles().stream()
+	            .map(Role::getRoleName)
+	            .collect(Collectors.toSet());
+	    updatedUserDto.setRoles(roleNames);
+
+	    return updatedUserDto;
 	}
+
 
 	@Override
 	public void deleteUser(String id) throws Exception {

@@ -1,5 +1,9 @@
 package com.electroStore.DTOs;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import com.electroStore.Entities.Role;
 import com.electroStore.validate.ImageNameValid;
 
 import jakarta.validation.constraints.Email;
@@ -31,6 +35,8 @@ public class UserDto {
 	private String about;
 	@ImageNameValid
 	private String imageUrl;
+	
+	 private Set<String> roles = new HashSet<>();
 	
 
 }

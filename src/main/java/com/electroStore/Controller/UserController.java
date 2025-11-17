@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.electroStore.DTOs.PagableResponse;
 import com.electroStore.DTOs.UserDto;
-import com.electroStore.Entities.User;
 import com.electroStore.Helper.Messageresponce;
 import com.electroStore.Service.UserService;
 

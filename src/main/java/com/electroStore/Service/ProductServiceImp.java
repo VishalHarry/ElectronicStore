@@ -1,6 +1,7 @@
 package com.electroStore.Service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -39,40 +40,71 @@ public class ProductServiceImp implements ProductService {
 
 	@Override
 	public ProductDto createProduct(ProductDto dto) {
-		
-		String productId=UUID.randomUUID().toString();
-		dto.setId(productId);
-		
-		Product product=modelMapper.map(dto, Product.class);
-		repo.save(product);
-		
-		
-		return modelMapper.map(product, ProductDto.class);
+
+	    // 1️⃣ Generate random ID
+	    String productId = UUID.randomUUID().toString();
+	    dto.setId(productId);
+
+	    // 2️⃣ Fetch the Category from DB
+	    Category category = categoryRepo.findById(dto.getCategoryId())
+	            .orElseThrow(() -> new ResourceNotFoundExceptions("Category not found with id: " + dto.getCategoryId()));
+
+	    // 3️⃣ Map DTO to Entity
+	    Product product = modelMapper.map(dto, Product.class);
+	    product.setCategory(category);
+	    product.setAddedDate(new Date());
+
+	    // 4️⃣ Save Product
+	    Product savedProduct = repo.save(product);
+
+	    // 5️⃣ Map back to DTO
+	    ProductDto responseDto = modelMapper.map(savedProduct, ProductDto.class);
+	    responseDto.setCategoryId(category.getTitle());
+
+	    return responseDto;
 	}
+
 
 	@Override
 	public ProductDto updateProduct(ProductDto dto, String id) {
-	 
+
+	    // 1️⃣ Find the existing product
 	    Product savedProduct = repo.findById(id)
 	            .orElseThrow(() -> new ResourceNotFoundExceptions("Product not found with this id: " + id));
 
-	    
-	    savedProduct.setTitle(dto.getTitle());
-	    savedProduct.setDescription(dto.getDescription());
-	    savedProduct.setPrice(dto.getPrice());
-	    savedProduct.setDicountPric(dto.getDicountPric());
-	    savedProduct.setQuantity(dto.getQuantity());
-	    savedProduct.setLive(dto.getLive());
-	    savedProduct.setStock(dto.getStock());
+	    // 2️⃣ Update basic fields (only if not null)
+	    if (dto.getTitle() != null) savedProduct.setTitle(dto.getTitle());
+	    if (dto.getDescription() != null) savedProduct.setDescription(dto.getDescription());
+	    if (dto.getPrice() != null) savedProduct.setPrice(dto.getPrice());
+	    if (dto.getDicountPric() != null) savedProduct.setDicountPric(dto.getDicountPric());
+	    if (dto.getQuantity() != null) savedProduct.setQuantity(dto.getQuantity());
+	    if (dto.getLive() != null) savedProduct.setLive(dto.getLive());
+	    if (dto.getStock() != null) savedProduct.setStock(dto.getStock());
+	    if (dto.getImage() != null) savedProduct.setImage(dto.getImage());
+	    if (dto.getAddedDate() != null) savedProduct.setAddedDate(dto.getAddedDate());
 
-
-	    if (dto.getAddedDate() != null) {
-	        savedProduct.setAddedDate(dto.getAddedDate());
+	    // 3️⃣ If categoryId is provided → update the category
+	    if (dto.getCategoryId() != null) {
+	        Category category = categoryRepo.findById(dto.getCategoryId())
+	                .orElseThrow(() -> new ResourceNotFoundExceptions("Category not found with id: " + dto.getCategoryId()));
+	        savedProduct.setCategory(category);
 	    }
 
+	    // 4️⃣ Save updated product
 	    Product updatedProduct = repo.save(savedProduct);
-	    return modelMapper.map(updatedProduct, ProductDto.class);
+
+	    // 5️⃣ Convert back to DTO
+	    ProductDto responseDto = modelMapper.map(updatedProduct, ProductDto.class);
+
+	    // Add category title in response for clarity
+	    if (updatedProduct.getCategory() != null) {
+	        responseDto.setCategoryId(updatedProduct.getCategory().getCategoryId());
+	        responseDto.setCategoryId(updatedProduct.getCategory().getTitle());
+	    }
+
+	    return responseDto;
 	}
+
 
 
 	@Override

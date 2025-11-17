@@ -13,14 +13,14 @@ import com.electroStore.Helper.Messageresponce;
 import com.electroStore.Service.OrderService;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/order")
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
 
-    // 1️⃣ Create Order
-    @PostMapping("/")
+   
+   
     public ResponseEntity<OrderDto> createOrder(@RequestBody CreateOrderRequest request) {
         try {
             OrderDto orderDto = orderService.createdOrder(request);
