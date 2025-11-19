@@ -21,10 +21,14 @@ import com.electroStore.DTOs.UserDto;
 import com.electroStore.Helper.Messageresponce;
 import com.electroStore.Service.UserService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user")
+@Tag(
+		name = "User Controller",
+		description = "This controller handles all User-related operations like add, update, delete, search.")
 public class UserController {
 	@Autowired
 	private UserService userService;
